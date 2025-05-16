@@ -1,0 +1,21 @@
+- name: Install Nginx
+  apt:
+    name:
+      - nginx
+    state: latest
+  notify: Reload nginx
+
+- name: Configure SSH to bind only on external interface
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ListenAddress'
+    line: "ListenAddress {{ ansible_default_ipv4.address }}"
+    backup: no
+
+- name: Enable default Nginx site
+  file:
+    src: /etc/nginx/sites-available/default
+    dest: /etc/nginx/sites-enabled/default
+    state: link
+    force: yes
+  notify: Reload nginx

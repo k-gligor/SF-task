@@ -1,0 +1,50 @@
+- name: Install fail2ban
+  apt:
+    name: fail2ban
+    state: present
+
+- name: Allow SSH & HTTP on external interface
+  ufw:
+    rule: allow
+    proto: tcp
+    to_port: "{{ item.port }}"
+    interface: "{{ external_if }}"
+    direction: in
+    from_ip: any
+  loop:
+    - { port: 22 }
+    - { port: 80 }
+
+- name: Allow internal device access to port 9000
+  ufw:
+    rule: allow
+    proto: tcp
+    from_ip: 10.200.16.100
+    to_port: 9000
+    interface: "{{ internal_if }}"
+    direction: in
+
+- name: Deny all other incoming
+  ufw:
+    rule: deny
+    direction: in
+    from_ip: any
+
+- name: Harden SSH settings
+  blockinfile:
+    path: /etc/ssh/sshd_config
+    marker: "# {mark} ANSIBLE MANAGED SSH HARDENING"
+    block: |
+      PasswordAuthentication no
+      PermitRootLogin no
+
+- name: Apply sysctl hardening
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+  loop:
+    - { name: 'net.ipv4.ip_forward',       value: 0 }
+    - { name: 'net.ipv4.conf.all.rp_filter',  value: 1 }
+    - { name: 'net.ipv4.conf.default.rp_filter', value: 1 }

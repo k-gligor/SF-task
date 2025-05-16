@@ -1,0 +1,21 @@
+- hosts: ubuntu
+  become: true
+
+  vars:
+    external_if: "{{ ansible_default_ipv4.interface }}"
+
+  pre_tasks:
+    - name: Identify internal interface
+      set_fact:
+        internal_if: >-
+          {{ (ansible_interfaces | reject('equalto', external_if) | list)[0] }}
+    - name: Display interface variables
+      debug:
+        msg:
+          - "External interface: {{ external_if }}"
+          - "Internal interface: {{ internal_if }}"
+
+  roles:
+    - common
+    - web_ssh
+    - hardening
